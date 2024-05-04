@@ -58,6 +58,7 @@ async function run() {
       if(req.query?.email){
         query = {email: req.query.email}
       }
+      // previous system just in one line
       const result = await bookingCollection.find(query).toArray();
       res.send(result)
     })
@@ -70,6 +71,14 @@ async function run() {
         const result = await bookingCollection.insertOne(booking);
         res.send(result)
 
+    })
+
+    // 3
+    app.delete('/bookings/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
     })
 
 
