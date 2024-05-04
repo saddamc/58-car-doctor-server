@@ -52,7 +52,7 @@ async function run() {
     // bookings 
     // 2
     app.get('/bookings', async(req, res) => {
-      // email waise finding
+      // user/email waise filter by query
       console.log(req.query.email);
       let query = {};
       if(req.query?.email){
@@ -70,10 +70,25 @@ async function run() {
         console.log(booking);
         const result = await bookingCollection.insertOne(booking);
         res.send(result)
-
+    })
+    // 4 => app.patch so client server method: "PATCH"
+    app.patch('/bookings/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedBooking = req.body;
+      console.log(updatedBooking);
+      // new for 
+       const updateDoc = {
+      $set: {
+        // client a o same status 'confirm'
+        status: updatedBooking.status
+      },
+    };
+    const result = await bookingCollection.updateOne(filter, updateDoc);
+    res.send(result);
     })
 
-    // 3
+    // 3 delete order
     app.delete('/bookings/:id', async(req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)}
