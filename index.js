@@ -40,22 +40,22 @@ const verifyToken = async(req, res, next) =>{
   const token = req.cookies?.token;
   console.log('value of token in middleware', token)
  
-  // if(!token){
-  //   return req.status(401).send({message: 'not authorized'})
-  // }
-  // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-  //   // error
-  //   if(err){
-  //     console.log(err)
-  //     return res.status(401).send({message: 'unauthorized'})
-  //   }
+  if(!token){
+    return res.status(401).send({message: 'unauthorized access'})
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    // error
+    if(err){
+      console.log(err)
+      return res.status(401).send({message: 'unauthorized access'})
+    }
 
-  //   // if token is valid then it would be decoded
-  //   console.log('value in the token', decoded)
-
-   
-  // })
+    // if token is valid then it would be decoded
+    console.log('value in the token', decoded)
+    req.user = decoded;
    next();
+  })
+   
 }
 
 async function run() {
@@ -110,6 +110,7 @@ async function run() {
       // user/email waise filter by query
       console.log(req.query.email);
       // console.log('tok tok token', req.cookies.token);  /**for get token in server CMD */
+      console.log('user in the valid token', req.user)   /**in side show data {email: iat: exp:}  */
       let query = {};
       if(req.query?.email){
         query = {email: req.query.email}
