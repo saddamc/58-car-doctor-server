@@ -13,7 +13,6 @@ app.use(cors({
     'http://localhost:5173',
     'https://cars-doctor-7c7d8.web.app',
     'https://cars-doctor-7c7d8.firebaseapp.com'
-
   ],
   credentials: true
 }));
@@ -64,6 +63,14 @@ const verifyToken = async(req, res, next) =>{
    
 }
 
+const cookieOpttion = {
+        httpOnly: true,
+        // sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        // secure: false,
+        secure: process.env.NODE_ENV === 'production' ? true : false,         
+      }
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -95,21 +102,13 @@ async function run() {
       console.log('user for token', user )
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        // secure: true,
-        // sameSite: 'none'
-        secure: process.env.NODE_ENV === 'production', 
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      })
-      
-      res.send({success: true});
+      res.cookie('token', token, cookieOpttion).send({success: true});
     })
     // continue  02 (need to call form logout (const userEmail = currentUser?.email || user.email;))
     app.post('/logout', async(req, res) => {
       const user = req.body;
       console.log('logging out', user);
-      res.clearCookie('token', {maxAge: 0}).send({success: true})
+      res.clearCookie('token', { ...cookieOpttion, maxAge: 0}).send({success: true})
     })
 
 
@@ -144,9 +143,9 @@ async function run() {
       console.log('token owner info', req.user)  /***  for check => 2  **/
       // console.log('tok tok token', req.cookies.token);  /**for get token in server CMD */
       // console.log('user in the valid token', req.user)   /**in side show data {email: iat: exp:}  */
-      if(req.user.email !== req.query.email){            /**for your token your data */
-        return res.status(403).send({message: 'forbidden access'})
-      }
+      // if(req.user.email !== req.query.email){            /**for your token your data */
+      //   return res.status(403).send({message: 'forbidden access'})
+      // }
       /**user/email waise filter by query */
       let query = {};
       if(req.query?.email){
@@ -193,7 +192,7 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });      /**need command for deploy */
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
