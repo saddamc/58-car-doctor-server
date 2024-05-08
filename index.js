@@ -32,14 +32,16 @@ const client = new MongoClient(uri, {
 
 // middleware my (1)
 const logger = async(req, res, next) =>{
-  console.log('called', req.host, req.originalUrl)
+  // console.log('called', req.host, req.originalUrl);
+  console.log('log: info', req.method, req.url);
   next();
 }
 // middleware my (2)
 const verifyToken = async(req, res, next) =>{
-  const token = req.cookies?.token;
-  console.log('value of token in middleware', token)
- 
+  const token = req?.cookies?.token;
+  // console.log('value of token in middleware', token)
+
+  // no token available
   if(!token){
     return res.status(401).send({message: 'unauthorized access'})
   }
@@ -49,11 +51,10 @@ const verifyToken = async(req, res, next) =>{
       console.log(err)
       return res.status(401).send({message: 'unauthorized access'})
     }
-
     // if token is valid then it would be decoded
     console.log('value in the token', decoded)
     req.user = decoded;
-   next();
+    next();
   })
    
 }
@@ -66,22 +67,48 @@ async function run() {
     const serviceCollection = client.db('carDoctor').collection('services');
     const bookingCollection = client.db('carDoctor').collection('bookings');
 
-    // auth related api
+    // auth related api => 01 (local stroage)
+    // app.post('/jwt', logger, async(req, res) => {
+    //   const user = req.body;
+    //   console.log(user);
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'} )
+    //   console.log(token)
+
+    //   res
+    //   .cookie('token', token, {
+    //             httpOnly: true,
+    //             secure: process.env.NODE_ENV === 'production', 
+    //             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+
+    //         })
+    //   .send({success: true});
+    // })
+
+    // auth related api => token login & signup => 02
     app.post('/jwt', logger, async(req, res) => {
       const user = req.body;
-      console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'} )
-      console.log(token)
+      console.log('user for token', user )
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
 
-      res
-      .cookie('token', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', 
-                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-
-            })
-      .send({success: true});
+      res.cookie('token', token, {
+        httpOnly: true,
+        // secure: true,
+        // sameSite: 'none'
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      })
+      
+      res.send({success: true});
     })
+    // continue  02 (need to call form logout (const userEmail = currentUser?.email || user.email;))
+    app.post('/logout', async(req, res) => {
+      const user = req.body;
+      console.log('logging out', user);
+      res.clearCookie('token', {maxAge: 0}).send({success: true})
+    })
+
+
+
 
 
 
@@ -109,8 +136,13 @@ async function run() {
     app.get('/bookings', logger, verifyToken, async(req, res) => {
       // user/email waise filter by query
       console.log(req.query.email);
+      console.log('token owner info', req.user)  /***  for check => 2  **/
       // console.log('tok tok token', req.cookies.token);  /**for get token in server CMD */
-      console.log('user in the valid token', req.user)   /**in side show data {email: iat: exp:}  */
+      // console.log('user in the valid token', req.user)   /**in side show data {email: iat: exp:}  */
+      if(req.user.email !== req.query.email){            /**for your token your data */
+        return res.status(403).send({message: 'forbidden access'})
+      }
+      /**user/email waise filter by query */
       let query = {};
       if(req.query?.email){
         query = {email: req.query.email}
